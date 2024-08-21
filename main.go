@@ -84,6 +84,9 @@ func InitializeDatabase(user, password, dbName, host, port string) {
 }
 
 func HandleRoutes(router fiber.Router) {
+	router.Get("/healthz", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
 	api := router.Group("/api")
 	api.Post("/message", controllers.CreateMessage)
 	api.Post("/message/fetch", controllers.GetMessage)

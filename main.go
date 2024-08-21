@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/fatih/color"
-	"github.com/joho/godotenv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -23,11 +22,11 @@ import (
 var httpServer *fiber.App
 
 func main() {
-	// load .env file
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
+	// load .env file (commented for render.com fix)
+	// err := godotenv.Load(".env")
+	// if err != nil {
+	// 	log.Fatalf("Error loading .env file")
+	// }
 
 	MYSQL_HOST := os.Getenv("MYSQL_HOST")
 	MYSQL_USER := os.Getenv("MYSQL_USER")

@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	db "github.com/nikola43/onetimemessage/database"
 	"github.com/nikola43/onetimemessage/models"
@@ -14,6 +15,7 @@ func CreateMessage(request *models.CreateMessageRequest) (*models.CreateMessageR
 		Expiration: request.Expiration,
 		PublicId:   u.GenerateRandomId(),
 		PrivateId:  u.GenerateRandomId(),
+		CreatedAt:  uint(time.Now().Unix()),
 	}
 
 	key := ""
@@ -70,7 +72,6 @@ func GetMessage(request *models.GetMessageRequest) (*models.GetMessageResponse, 
 }
 
 func DeleteMessage(id string) error {
-	// Get the message from the database
 	message := &models.Message{}
 	result := db.GormDB.First(&message, "public_id = ?", id)
 	if result.Error != nil {
@@ -82,6 +83,6 @@ func DeleteMessage(id string) error {
 	if r.Error != nil {
 		return r.Error
 	}
-	
+
 	return nil
 }

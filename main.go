@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/fatih/color"
+	"github.com/joho/godotenv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -22,11 +23,11 @@ import (
 var httpServer *fiber.App
 
 func main() {
-	// load .env file (commented for render.com fix)
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	log.Fatalf("Error loading .env file")
-	// }
+	//load .env file (commented for render.com fix)
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 
 	MYSQL_HOST := os.Getenv("MYSQL_HOST")
 	MYSQL_USER := os.Getenv("MYSQL_USER")
@@ -46,7 +47,7 @@ func main() {
 
 	// Initialize the database
 	InitializeDatabase(MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, MYSQL_HOST, MYSQL_PORT)
-	//db.Migrate()
+	db.Migrate()
 	InitializeHttpServer()
 }
 
@@ -67,16 +68,13 @@ func InitializeHttpServer() {
 
 	HandleRoutes(httpServer)
 
-	httpServer.Listen(":3000")
-
+	httpServer.Listen(":3001")
 }
 
 func InitializeDatabase(user, password, dbName, host, port string) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, dbName)
-
 	var err error
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, dbName)
 	db.GormDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
-	//db.GormDB, err = gorm.Open(mysql.New(mysql.Config{Conn: DB}), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 	if err != nil {
 		log.Fatal(err)
 	}

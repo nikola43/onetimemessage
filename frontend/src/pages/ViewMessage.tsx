@@ -6,11 +6,9 @@ import {
   TextField,
   Button,
   Paper,
-  Alert,
   CircularProgress,
 } from "@mui/material";
 import { getMessage } from "../api/client";
-import { motion } from "framer-motion";
 import axios from "axios";
 
 const ViewMessage = () => {
@@ -18,16 +16,16 @@ const ViewMessage = () => {
   const navigate = useNavigate();
   const [privateKey, setPrivateKey] = useState("");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [error, setError] = useState("");
 
   const handleReveal = async () => {
     if (!publicId) return;
     setLoading(true);
     setError("");
     try {
-      const data = await getMessage(publicId, privateKey);
+      const data = await getMessage(publicId, privateKey.trim());
       setMessage(data.msg);
       setRevealed(true);
     } catch (err) {
@@ -42,16 +40,24 @@ const ViewMessage = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Paper sx={{ p: 4, maxWidth: 800, mx: "auto", textAlign: "center" }}>
+    <Box>
+      <Paper
+        sx={{
+          p: 4,
+          maxWidth: 800,
+          mx: "auto",
+          textAlign: "center",
+          backdropFilter: "blur(10px)",
+          background: "rgba(10, 25, 41, 0.7)",
+        }}
+      >
         <Typography
           variant="h1"
           gutterBottom
-          sx={{ fontSize: "2.5rem !important" }}
+          sx={{
+            fontSize: "2.5rem !important",
+            textShadow: "0 0 10px rgba(0, 255, 255, 0.5)",
+          }}
         >
           Secret Message
         </Typography>
@@ -73,30 +79,52 @@ const ViewMessage = () => {
               fullWidth
               placeholder="-----BEGIN RSA PRIVATE KEY-----..."
               sx={{ fontFamily: "monospace" }}
+              variant="filled"
             />
 
-            {error && <Alert severity="error">{error}</Alert>}
+            {error && (
+              <Typography color="error" sx={{ mt: 2 }}>
+                {error}
+              </Typography>
+            )}
 
             <Button
               variant="contained"
               size="large"
               onClick={handleReveal}
               disabled={loading || !privateKey}
-              color="secondary"
+              sx={{
+                background: "linear-gradient(45deg, #f50057 30%, #ff4081 90%)",
+                boxShadow: "0 3px 5px 2px rgba(255, 105, 135, .3)",
+                color: "white",
+                height: 48,
+              }}
             >
-              {loading ? <CircularProgress size={24} /> : "Unlock Message"}
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Unlock Message"
+              )}
             </Button>
           </Box>
         ) : (
           <Box sx={{ mt: 3 }}>
-            <Alert severity="warning" sx={{ mb: 3 }}>
-              This message has been destroyed from the server. Copy it now if
+            <Typography
+              variant="body1"
+              sx={{ mb: 3, fontWeight: "bold", color: "warning.main" }}
+            >
+              ⚠️ This message has been destroyed from the server. Copy it now if
               you need to save it.
-            </Alert>
+            </Typography>
 
             <Paper
               variant="outlined"
-              sx={{ p: 3, bgcolor: "background.default", textAlign: "left" }}
+              sx={{
+                p: 3,
+                bgcolor: "rgba(0,0,0,0.3)",
+                textAlign: "left",
+                border: "1px solid rgba(0, 255, 0, 0.3)",
+              }}
             >
               <Typography
                 variant="body1"
@@ -104,6 +132,8 @@ const ViewMessage = () => {
                   whiteSpace: "pre-wrap",
                   fontFamily: "monospace",
                   fontSize: "1.1rem",
+                  color: "#00ff00",
+                  textShadow: "0 0 5px rgba(0, 255, 0, 0.5)",
                 }}
               >
                 {message}
@@ -116,7 +146,7 @@ const ViewMessage = () => {
           </Box>
         )}
       </Paper>
-    </motion.div>
+    </Box>
   );
 };
 

@@ -1,0 +1,109 @@
+definitions:
+  api.CreateMessageRequest:
+    properties:
+      expiration:
+        description: Min 1 minute
+        minimum: 60
+        type: integer
+      msg:
+        type: string
+    required:
+    - expiration
+    - msg
+    type: object
+  api.CreateMessageResponse:
+    properties:
+      private_key:
+        type: string
+      public_id:
+        type: string
+    type: object
+  api.GetMessageRequest:
+    properties:
+      private_key:
+        type: string
+      public_id:
+        type: string
+    required:
+    - private_key
+    - public_id
+    type: object
+  api.GetMessageResponse:
+    properties:
+      msg:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/message:
+    post:
+      consumes:
+      - application/json
+      description: Create a message with expiration and optional password protection.
+        Returns a Public ID and a Private Key.
+      parameters:
+      - description: Message Creation Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.CreateMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new one-time message
+      tags:
+      - message
+  /api/message/fetch:
+    post:
+      consumes:
+      - application/json
+      description: Retrieve and decrypt a message using its Public ID and Private
+        Key. The message is deleted after retrieval.
+      parameters:
+      - description: Message Retrieval Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/api.GetMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.GetMessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Retrieve a one-time message
+      tags:
+      - message
+swagger: "2.0"

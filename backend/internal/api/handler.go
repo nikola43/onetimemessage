@@ -18,6 +18,17 @@ func NewMessageHandler(service domain.MessageService) *MessageHandler {
 	}
 }
 
+// Create godoc
+// @Summary Create a new one-time message
+// @Description Create a message with expiration and optional password protection. Returns a Public ID and a Private Key.
+// @Tags message
+// @Accept json
+// @Produce json
+// @Param request body CreateMessageRequest true "Message Creation Request"
+// @Success 201 {object} CreateMessageResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/message [post]
 func (h *MessageHandler) Create(c *fiber.Ctx) error {
 	var req CreateMessageRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -39,6 +50,17 @@ func (h *MessageHandler) Create(c *fiber.Ctx) error {
 	})
 }
 
+// Get godoc
+// @Summary Retrieve a one-time message
+// @Description Retrieve and decrypt a message using its Public ID and Private Key. The message is deleted after retrieval.
+// @Tags message
+// @Accept json
+// @Produce json
+// @Param request body GetMessageRequest true "Message Retrieval Request"
+// @Success 200 {object} GetMessageResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/message/fetch [post]
 func (h *MessageHandler) Get(c *fiber.Ctx) error {
 	var req GetMessageRequest
 	// Allow getting params from body or query/params?

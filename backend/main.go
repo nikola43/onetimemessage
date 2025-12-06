@@ -1,0 +1,114 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/nikola43/onetimemessage/internal/api"
+	"github.com/nikola43/onetimemessage/internal/config"
+	"github.com/nikola43/onetimemessage/internal/domain"
+	"github.com/nikola43/onetimemessage/internal/repository"
+	"github.com/nikola43/onetimemessage/internal/service"
+	"github.com/nikola43/onetimemessage/internal/worker"
+	pkgLogger "github.com/nikola43/onetimemessage/pkg/logger"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func main() {
+	// 1. Config
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Printf("Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 2. Logger
+	log := pkgLogger.New(cfg.AppEnv)
+
+	// 3. Database
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName)
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to connect to database")
+	}
+
+	// Auto Migrate
+	if err := db.AutoMigrate(&domain.Message{}); err != nil {
+		log.Fatal().Err(err).Msg("Failed to migrate database")
+	}
+
+	// 4. Wiring
+	msgRepo := repository.NewMessageRepository(db)
+	msgService := service.NewMessageService(msgRepo)
+	msgHandler := api.NewMessageHandler(msgService)
+	cleaner := worker.NewCleaner(msgRepo, log)
+
+	// 5. Start Worker
+	cleaner.Start(1 * time.Minute)
+
+	// 6. Server
+	app := fiber.New(fiber.Config{
+		BodyLimit: 2000 * 1024 * 1024,
+	})
+
+	app.Use(logger.New())
+	app.Use(helmet.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: cfg.FrontendURL,
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
+	app.Use(limiter.New(limiter.Config{
+		Max:        20,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many requests. Please try again later.",
+			})
+		},
+	}))
+
+	// Routes
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	apiGroup := app.Group("/api")
+	apiGroup.Post("/message", msgHandler.Create)
+	apiGroup.Post("/message/fetch", msgHandler.Get)
+
+	// Health check
+	app.Get("/healthz", func(c *fiber.Ctx) error {
+		return c.SendString("OK")
+	})
+
+	// 7. Start
+	go func() {
+		if err := app.Listen(":" + cfg.AppPort); err != nil {
+			log.Fatal().Err(err).Msg("Server failed")
+		}
+	}()
+
+	log.Info().Msgf("Server started on port %s", cfg.AppPort)
+
+	// Graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
+
+	log.Info().Msg("Shutting down...")
+	_ = app.Shutdown()
+}

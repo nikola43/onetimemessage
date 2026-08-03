@@ -1,0 +1,32 @@
+[package]
+name = "onetimemessage-backend"
+version = "1.0.0"
+edition = "2021"
+description = "High-performance self-destructing secrets API with military-grade encryption"
+authors = ["OneTimeMessage Team"]
+license = "MIT"
+
+[dependencies]
+may_minihttp = "0.1"
+may = "0.3"
+diesel = { version = "2.1", features = ["mysql", "r2d2", "chrono"] }
+dotenvy = "0.15"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+base64 = "0.22.1"
+rand = "0.9.2"
+ring = "0.17"
+hex = "0.4"
+urlencoding = "2.1"
+dashmap = "6.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
